@@ -1,0 +1,53 @@
+{
+  "name": "netcdf-explorer",
+  "displayName": "NetCDF Explorer",
+  "description": "Automatically create info file when clicking on NetCDF files",
+  "version": "0.0.1",
+  "publisher": "zsy1207",
+  "icon": "logo.jpeg",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "netcdf",
+    "scientific",
+    "data",
+    "explorer",
+    "metadata"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zsy1207/netcdf-explorer"
+  },
+  "activationEvents": [
+    "onCommand:netcdf-explorer.showInfo"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "netcdf-explorer.showInfo",
+        "title": "Show NetCDF Info"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "netcdf-explorer.showInfo",
+          "when": "resourceExtname == .nc"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "package": "vsce package"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@types/node": "20.x"
+  }
+} 
