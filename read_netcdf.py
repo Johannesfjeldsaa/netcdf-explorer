@@ -27,7 +27,7 @@ try:
     print("netCDF4 version:", nc.__version__, file=sys.stderr)
 except ImportError as e:
     print("Error importing netCDF4:", str(e), file=sys.stderr)
-    print("Please ensure netCDF4 is installed correctly", file=sys.stderr)
+    print("Please install netCDF4 using: pip install netCDF4", file=sys.stderr)
     sys.exit(1)
 
 import numpy as np
@@ -48,8 +48,10 @@ def get_shape_info(var):
     return "N/A"
 
 def normalize_path(file_path):
-    """规范化文件路径，处理中文路径问题"""
+    """规范化文件路径，处理中文路径和WSL路径问题"""
     try:
+        print(f"Input path: {file_path}", file=sys.stderr)
+        
         # 如果是bytes，尝试解码
         if isinstance(file_path, bytes):
             try:
@@ -59,24 +61,34 @@ def normalize_path(file_path):
                     file_path = file_path.decode('gbk')
                 except UnicodeDecodeError:
                     file_path = file_path.decode('windows-1252')
-
-        # 转换为Path对象
-        path = Path(file_path)
         
-        # 获取绝对路径
-        abs_path = str(path.resolve())
+        # 处理WSL路径
+        if file_path.startswith('/mnt/'):
+            # WSL路径，保持不变
+            normalized_path = file_path
+        else:
+            # 转换为Path对象并解析
+            path = Path(file_path)
+            normalized_path = str(path.resolve())
         
-        print(f"Original path: {file_path}", file=sys.stderr)
-        print(f"Normalized path: {abs_path}", file=sys.stderr)
+        print(f"Normalized path: {normalized_path}", file=sys.stderr)
         
         # 检查文件是否存在
-        if not path.exists():
-            raise FileNotFoundError(f"File not found: {abs_path}")
-            
-        return abs_path
+        if not os.path.exists(normalized_path):
+            print(f"File not found at normalized path: {normalized_path}", file=sys.stderr)
+            # 如果规范化路径不存在，尝试使用原始路径
+            if os.path.exists(file_path):
+                print(f"File found at original path: {file_path}", file=sys.stderr)
+                return file_path
+            raise FileNotFoundError(f"File not found: {normalized_path}")
+        
+        return normalized_path
         
     except Exception as e:
         print(f"Path normalization error: {str(e)}", file=sys.stderr)
+        print("Traceback:", file=sys.stderr)
+        traceback.print_exc(file=sys.stderr)
+        # 如果规范化失败，返回原始路径
         return file_path
 
 def get_netcdf_info(file_path):
@@ -88,10 +100,14 @@ def get_netcdf_info(file_path):
         # Try different ways to open the file
         try:
             dataset = nc.Dataset(normalized_path, 'r')
-        except:
-            # If opening with normalized path fails, try original path
-            print("Failed to open with normalized path, trying original path...", file=sys.stderr)
-            dataset = nc.Dataset(file_path, 'r')
+        except Exception as e:
+            print(f"Failed to open with normalized path: {str(e)}", file=sys.stderr)
+            print("Trying original path...", file=sys.stderr)
+            try:
+                dataset = nc.Dataset(file_path, 'r')
+            except Exception as e:
+                print(f"Failed to open with original path: {str(e)}", file=sys.stderr)
+                raise
         
         print("File opened successfully", file=sys.stderr)
         
@@ -99,42 +115,8 @@ def get_netcdf_info(file_path):
         print("Reading global attributes...", file=sys.stderr)
         global_attrs = {}
         for attr in dataset.ncattrs():
-            value = dataset.getncattr(attr)
-            # Convert numpy array to list
-            if isinstance(value, np.ndarray):
-                value = value.tolist()
-            # Convert numpy numeric types to Python native types
-            elif isinstance(value, (np.int32, np.int64)):
-                value = int(value)
-            elif isinstance(value, (np.float32, np.float64)):
-                value = float(value)
-            # Ensure strings use UTF-8 encoding
-            elif isinstance(value, str):
-                value = value.encode('utf-8', errors='replace').decode('utf-8')
-            global_attrs[attr] = value
-        print(f"Found {len(global_attrs)} global attributes", file=sys.stderr)
-        
-        # Get dimension information
-        print("Reading dimensions...", file=sys.stderr)
-        dimensions = {}
-        for dim_name, dim in dataset.dimensions.items():
-            dimensions[dim_name] = len(dim)
-        print(f"Found {len(dimensions)} dimensions", file=sys.stderr)
-        
-        # Get variable information
-        print("Reading variables...", file=sys.stderr)
-        variables = {}
-        for var_name, var in dataset.variables.items():
-            var_info = {
-                'dimensions': var.dimensions,
-                'type': str(var.dtype),
-                'shape': get_shape_info(var),
-                'attributes': {}
-            }
-            
-            # Get variable attributes
-            for attr in var.ncattrs():
-                value = var.getncattr(attr)
+            try:
+                value = dataset.getncattr(attr)
                 # Convert numpy array to list
                 if isinstance(value, np.ndarray):
                     value = value.tolist()
@@ -146,9 +128,59 @@ def get_netcdf_info(file_path):
                 # Ensure strings use UTF-8 encoding
                 elif isinstance(value, str):
                     value = value.encode('utf-8', errors='replace').decode('utf-8')
-                var_info['attributes'][attr] = value
-            
-            variables[var_name] = var_info
+                global_attrs[attr] = value
+            except Exception as e:
+                print(f"Error reading global attribute {attr}: {str(e)}", file=sys.stderr)
+                global_attrs[attr] = f"Error: {str(e)}"
+        print(f"Found {len(global_attrs)} global attributes", file=sys.stderr)
+        
+        # Get dimension information
+        print("Reading dimensions...", file=sys.stderr)
+        dimensions = {}
+        for dim_name, dim in dataset.dimensions.items():
+            try:
+                dimensions[dim_name] = len(dim)
+            except Exception as e:
+                print(f"Error reading dimension {dim_name}: {str(e)}", file=sys.stderr)
+                dimensions[dim_name] = f"Error: {str(e)}"
+        print(f"Found {len(dimensions)} dimensions", file=sys.stderr)
+        
+        # Get variable information
+        print("Reading variables...", file=sys.stderr)
+        variables = {}
+        for var_name, var in dataset.variables.items():
+            try:
+                var_info = {
+                    'dimensions': var.dimensions,
+                    'type': str(var.dtype),
+                    'shape': get_shape_info(var),
+                    'attributes': {}
+                }
+                
+                # Get variable attributes
+                for attr in var.ncattrs():
+                    try:
+                        value = var.getncattr(attr)
+                        # Convert numpy array to list
+                        if isinstance(value, np.ndarray):
+                            value = value.tolist()
+                        # Convert numpy numeric types to Python native types
+                        elif isinstance(value, (np.int32, np.int64)):
+                            value = int(value)
+                        elif isinstance(value, (np.float32, np.float64)):
+                            value = float(value)
+                        # Ensure strings use UTF-8 encoding
+                        elif isinstance(value, str):
+                            value = value.encode('utf-8', errors='replace').decode('utf-8')
+                        var_info['attributes'][attr] = value
+                    except Exception as e:
+                        print(f"Error reading attribute {attr} for variable {var_name}: {str(e)}", file=sys.stderr)
+                        var_info['attributes'][attr] = f"Error: {str(e)}"
+                
+                variables[var_name] = var_info
+            except Exception as e:
+                print(f"Error reading variable {var_name}: {str(e)}", file=sys.stderr)
+                variables[var_name] = {'error': str(e)}
         print(f"Found {len(variables)} variables", file=sys.stderr)
         
         # Close file
@@ -204,6 +236,10 @@ def create_markdown(info, file_path, size_mb):
         lines.append("## Variables")
         for var_name, var_info in info['variables'].items():
             lines.append(f"### {var_name}")
+            if 'error' in var_info:
+                lines.append(f"Error reading variable: {var_info['error']}")
+                continue
+                
             lines.append(f"- **Type**: {var_info['type']}")
             lines.append(f"- **Shape**: {var_info.get('shape', 'N/A')}")
             # Add dimension size information for each dimension
@@ -236,29 +272,26 @@ if __name__ == '__main__':
     file_path = sys.argv[1]
     try:
         print(f"Starting to process file: {file_path}", file=sys.stderr)
-        info = get_netcdf_info(file_path)
-        print("Successfully got netCDF info", file=sys.stderr)
         
+        # 检查文件是否存在
+        if not os.path.exists(file_path):
+            print(f"File not found: {file_path}", file=sys.stderr)
+            sys.exit(1)
+            
         # 获取文件大小
         size_bytes = os.path.getsize(file_path)
         size_mb = f"{(size_bytes / (1024 * 1024)):.2f}"
         
-        # 创建Markdown格式输出
-        markdown_content = create_markdown({
-            'filename': os.path.basename(file_path),
-            'globalAttributes': info['globalAttributes'],
-            'dimensions': info['dimensions'],
-            'variables': info['variables']
-        }, file_path, size_mb)
+        # 获取netCDF信息
+        info = get_netcdf_info(file_path)
+        print("Successfully got netCDF info", file=sys.stderr)
         
-        # 确保输出使用UTF-8编码
-        if hasattr(sys.stdout, 'buffer'):
-            sys.stdout.buffer.write(markdown_content.encode('utf-8'))
-        else:
-            print(markdown_content)
+        # 创建Markdown格式输出
+        markdown_content = create_markdown(info, file_path, size_mb)
+        print(markdown_content)
         
     except Exception as e:
-        print(f"Error reading netCDF file: {str(e)}", file=sys.stderr)
+        print(f"Error: {str(e)}", file=sys.stderr)
         print("Traceback:", file=sys.stderr)
         traceback.print_exc(file=sys.stderr)
         sys.exit(1) 

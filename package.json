@@ -2,14 +2,16 @@
   "name": "netcdf-explorer",
   "displayName": "NetCDF Explorer",
   "description": "Automatically create info file when clicking on NetCDF files",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "publisher": "zsy1207",
   "icon": "logo.jpeg",
   "engines": {
     "vscode": "^1.85.0"
   },
   "categories": [
-    "Other"
+    "Other",
+    "Data Science",
+    "Visualization"
   ],
   "keywords": [
     "netcdf",
@@ -21,6 +23,15 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/zsy1207/netcdf-explorer"
+  },
+  "bugs": {
+    "url": "https://github.com/zsy1207/netcdf-explorer/issues"
+  },
+  "homepage": "https://github.com/zsy1207/netcdf-explorer#readme",
+  "license": "MIT",
+  "author": {
+    "name": "zsy1207",
+    "email": "zsy1207@example.com"
   },
   "activationEvents": [
     "onCommand:netcdf-explorer.showInfo"
@@ -43,11 +54,13 @@
     }
   },
   "scripts": {
-    "package": "vsce package"
+    "package": "vsce package",
+    "publish": "vsce publish"
   },
   "dependencies": {},
   "devDependencies": {
     "@types/vscode": "^1.85.0",
-    "@types/node": "20.x"
+    "@types/node": "20.x",
+    "@vscode/vsce": "^2.24.0"
   }
 } 

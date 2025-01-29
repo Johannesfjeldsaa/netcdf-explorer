@@ -1,8 +1,81 @@
-# NetCDF Explorer / NetCDF文件浏览器
+# NetCDF Explorer
 
-A VSCode extension for quick NetCDF file metadata exploration and AI-assisted scientific programming.
+A Visual Studio Code extension for exploring NetCDF files. This extension allows you to quickly view the structure and metadata of NetCDF files directly in VSCode.
 
-这是一个VSCode扩展，用于快速浏览NetCDF文件元数据并辅助AI科学编程。
+## Features
+
+- View NetCDF file structure and metadata with a single click
+- Support for both Windows and WSL environments
+- Automatic generation of markdown documentation for NetCDF files
+- Context menu integration for .nc files
+
+## Requirements
+
+- Visual Studio Code 1.85.0 or higher
+- Python 3.x with netCDF4 package installed
+
+### For Windows Users:
+```bash
+# Install Python and netCDF4 package
+pip install netCDF4
+```
+
+### For WSL Users:
+```bash
+# Install required packages
+sudo apt update
+sudo apt install python3 python3-pip
+pip3 install netCDF4
+```
+
+## Installation
+
+1. Install through VS Code Extensions. Search for "NetCDF Explorer"
+2. Install through VSIX file:
+   - Download the .vsix file
+   - Run `code --install-extension netcdf-explorer-0.0.2.vsix`
+
+## Usage
+
+1. Right-click on a .nc file in the VSCode explorer
+2. Select "Show NetCDF Info" from the context menu
+3. A new markdown file will be created with the NetCDF file's structure and metadata
+
+## Features in Detail
+
+The extension provides detailed information about your NetCDF files:
+
+- Basic file information (name, size)
+- Dimensions
+- Variables and their attributes
+- Global attributes
+- Data types and shapes
+
+## Known Issues
+
+- Some special characters in file paths may cause issues in WSL environment
+- Large NetCDF files may take longer to process
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Release Notes
+
+### 0.0.2 (Current)
+- Fixed WSL path handling issues
+- Improved documentation and README
+- Enhanced error handling
+
+### 0.0.1
+- Initial release
+- Basic NetCDF file information extraction
+- Markdown format output
+- Support for Chinese paths and content
 
 ## Quick Demo / 快速演示
 
@@ -22,24 +95,11 @@ The demo shows how to:
 2. 生成结构化的.info.md文件
 3. 将NetCDF文件元数据加入到cursor的context中，提供编程效率和自动化程度
 
-## Requirements / 环境要求
-
-- VSCode 1.85.0+
-- Python with netCDF4 (`pip install netCDF4`)
-- numpy (`pip install numpy`)
-
 ## Why NetCDF Explorer? / 为什么选择NetCDF Explorer?
 
 - **Python-based**: Replace NCL with modern Python ecosystem / 使用Python生态系统替代NCL
 - **AI-Ready**: Generate structured metadata for AI programming / 为AI编程生成结构化元数据
 - **Integration**: Enhance automation with Cursor, CLine, and GitHub Copilot / 提升使用Cursor、CLine、GitHub Copilot等工具的自动化程度
-
-## Features / 功能特点
-
-- One-click metadata extraction / 一键提取元数据
-- Structured Markdown output / 结构化Markdown输出
-- Multi-language support / 多语言支持
-- Cross-platform (Windows, Linux, WSL2) / 跨平台支持
 
 ## Output Format / 输出格式
 
@@ -71,10 +131,6 @@ The demo shows how to:
 2. **Error reading file**: Check Python and netCDF4 installation / 检查Python和netCDF4安装
 3. **Character encoding issues**: Ensure UTF-8 encoding / 确保UTF-8编码
 
-## License / 许可证
-
-MIT
-
 ## Contact & Repository / 联系方式与仓库
 
 - **Publisher**: zsy1207
@@ -83,7 +139,12 @@ MIT
 
 ## Version History / 版本历史
 
-### 0.0.1 (Current)
+### 0.0.2 (Current)
+- Fixed WSL path handling issues
+- Improved documentation and README
+- Enhanced error handling
+
+### 0.0.1
 - Initial release
 - Basic NetCDF file information extraction
 - Markdown format output

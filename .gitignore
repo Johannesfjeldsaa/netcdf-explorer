@@ -1,18 +1,33 @@
-# Dependencies
-node_modules/
-package-lock.json
-
-# Build outputs
+# VS Code files
+.vscode/
 *.vsix
+
+# Node modules
+node_modules/
 
 # Python
 __pycache__/
 *.py[cod]
 *$py.class
 
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Logs
+*.log
+
+# Environment
+.env
+.venv
+env/
+venv/
+
 # IDE
-.vscode/
 .idea/
+*.swp
+*.swo
 
 # OS
 .DS_Store
