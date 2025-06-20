@@ -419,7 +419,8 @@ function activate(context) {
             if (filePath.startsWith('-/')) {
                 filePath = filePath.slice(1);
             }
-
+            console.log('Link text:', link.text);
+            console.log('path.isAbsolute(link.text):', path.isAbsolute(link.text));
             // If the path is absolute, use as-is.
             // If it's not, join with workspace root for resolution.
             if (!path.isAbsolute(filePath)) {
