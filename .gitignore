@@ -1,6 +1,8 @@
 # VS Code files
 .vscode/
 
+# history files
+.history/
 
 # Node modules
 node_modules/

@@ -2,7 +2,7 @@
   "name": "netcdf-explorer",
   "displayName": "NetCDF Explorer",
   "description": "Automatically create info file when clicking on NetCDF files",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "publisher": "zsy1207",
   "icon": "logo.jpeg",
   "engines": {
@@ -38,10 +38,25 @@
   ],
   "main": "./extension.js",
   "contributes": {
+    "configuration": {
+      "title": "NetCDF Explorer",
+      "description": "Configuration settings for the NetCDF Explorer extension.",
+      "properties": {
+        "netcdfExplorer.pythonPath": {
+          "type": "string",
+          "default": "python",
+          "description": "Path to the Python interpreter to use for the NetCDF Explorer extension."
+        }
+      }
+    },
     "commands": [
       {
         "command": "netcdf-explorer.showInfo",
         "title": "Show NetCDF Info"
+      },
+      {
+        "command": "netcdf-explorer.setPythonPath",
+        "title": "NetCDF Explorer: Set Python Path"
       }
     ],
     "menus": {
@@ -49,6 +64,12 @@
         {
           "command": "netcdf-explorer.showInfo",
           "when": "resourceExtname == .nc"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "netcdf-explorer.setPythonPath",
+          "when": "true"
         }
       ]
     }
@@ -63,4 +84,4 @@
     "@types/node": "20.x",
     "@vscode/vsce": "^2.24.0"
   }
-} 
+}

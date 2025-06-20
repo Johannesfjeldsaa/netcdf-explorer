@@ -2,6 +2,7 @@ const vscode = require('vscode');
 const path = require('path');
 const fs = require('fs');
 const { spawn, spawnSync } = require('child_process');
+const userPythonPath = vscode.workspace.getConfiguration('netcdfExplorer').get('pythonPath', '');
 
 /**
  * 转换Windows路径为WSL路径
@@ -52,13 +53,17 @@ function convertWindowsToWSLPath(windowsPath) {
 
 /**
  * 检查WSL环境并获取配置
+ * @param {string} [userPythonPath] - Optional user-specified Python path
  * @returns {Promise<{isWSL: boolean, pythonPath: string, wslVersion: number, distroName: string, isNativeWSL: boolean}>}
  */
-async function checkWSLEnvironment() {
+async function checkWSLEnvironment(userPythonPath = '') {
     try {
+        // Prefer user-specified pythonPath if given, otherwise auto-detect.
+        let pythonPath = userPythonPath;
+
         // 检查是否在WSL中原生运行
         if (process.platform === 'linux' && process.env.WSL_DISTRO_NAME) {
-            const pythonPath = await getPythonPath();
+            pythonPath = await getPythonPath();
             return {
                 isWSL: true,
                 pythonPath,
@@ -102,7 +107,7 @@ async function checkWSLEnvironment() {
         const wslVersion = wslVersionCheck.status === 0 ? 2 : 1;
 
         // 获取Python路径
-        const pythonPath = await getPythonPath();
+        pythonPath = await getPythonPath();
 
         return {
             isWSL: true,
@@ -214,6 +219,15 @@ async function executeInWSL(command, options = {}) {
 function activate(context) {
     console.log('Activating NetCDF Explorer extension...');
 
+    let setPythonPathDisposable = vscode.commands.registerCommand('netcdf-explorer.setPythonPath', async () => {
+        // Open the settings UI focused on the pythonPath setting
+        await vscode.commands.executeCommand(
+            'workbench.action.openSettings',
+            'netcdfExplorer.pythonPath'
+        );
+    });
+    context.subscriptions.push(setPythonPathDisposable);
+
     let disposable = vscode.commands.registerCommand('netcdf-explorer.showInfo', async (uri) => {
         try {
             console.log('Command triggered with uri:', uri);
@@ -235,7 +249,8 @@ function activate(context) {
             }
 
             // 检查环境
-            const env = await checkWSLEnvironment();
+            const userPythonPath = vscode.workspace.getConfiguration('netcdfExplorer').get('pythonPath', '');
+            const env = await checkWSLEnvironment(userPythonPath);
             console.log('Environment check result:', env);
 
             // 读取netCDF文件
