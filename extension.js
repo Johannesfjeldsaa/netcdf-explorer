@@ -63,7 +63,7 @@ async function checkWSLEnvironment(userPythonPath = '') {
 
         // 检查是否在WSL中原生运行
         if (process.platform === 'linux' && process.env.WSL_DISTRO_NAME) {
-            pythonPath = await getPythonPath();
+            if (!pythonPath) pythonPath = await getPythonPath();
             return {
                 isWSL: true,
                 pythonPath,
@@ -75,9 +75,10 @@ async function checkWSLEnvironment(userPythonPath = '') {
 
         // 检查是否在Windows上运行
         if (process.platform !== 'win32') {
+            if (!pythonPath) pythonPath = 'python3';
             return {
                 isWSL: false,
-                pythonPath: 'python3',
+                pythonPath,
                 wslVersion: 0,
                 distroName: '',
                 isNativeWSL: false
@@ -88,9 +89,10 @@ async function checkWSLEnvironment(userPythonPath = '') {
         const bashCheck = spawnSync('wsl.exe', ['which', 'bash']);
         if (bashCheck.status !== 0) {
             console.log('WSL bash check failed:', bashCheck.error);
+            if (!pythonPath) pythonPath = 'python.exe';
             return {
                 isWSL: false,
-                pythonPath: 'python.exe',
+                pythonPath,
                 wslVersion: 0,
                 distroName: '',
                 isNativeWSL: false
@@ -107,7 +109,7 @@ async function checkWSLEnvironment(userPythonPath = '') {
         const wslVersion = wslVersionCheck.status === 0 ? 2 : 1;
 
         // 获取Python路径
-        pythonPath = await getPythonPath();
+        if (!pythonPath) pythonPath = await getPythonPath();
 
         return {
             isWSL: true,
@@ -121,7 +123,7 @@ async function checkWSLEnvironment(userPythonPath = '') {
         console.error('WSL environment check failed:', error);
         return {
             isWSL: false,
-            pythonPath: 'python.exe',
+            pythonPath: userPythonPath || 'python.exe',
             wslVersion: 0,
             distroName: '',
             isNativeWSL: false
