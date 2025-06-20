@@ -5,7 +5,7 @@ const { spawn, spawnSync } = require('child_process');
 
 /**
  * 转换Windows路径为WSL路径
- * @param {string} windowsPath 
+ * @param {string} windowsPath
  * @returns {string}
  */
 function convertWindowsToWSLPath(windowsPath) {
@@ -158,8 +158,8 @@ async function getPythonPath() {
 
 /**
  * 在WSL中执行命令
- * @param {string} command 
- * @param {Object} options 
+ * @param {string} command
+ * @param {Object} options
  * @returns {Promise<{stdout: string, stderr: string}>}
  */
 async function executeInWSL(command, options = {}) {
@@ -217,15 +217,15 @@ function activate(context) {
     let disposable = vscode.commands.registerCommand('netcdf-explorer.showInfo', async (uri) => {
         try {
             console.log('Command triggered with uri:', uri);
-            
+
             // 获取文件路径
             const filePath = uri.fsPath;
             console.log('Processing file:', filePath);
-            
+
             // 获取Python脚本的路径
             const scriptPath = path.join(__dirname, 'read_netcdf.py');
             console.log('Script path:', scriptPath);
-            
+
             // 检查文件是否存在
             if (!fs.existsSync(filePath)) {
                 throw new Error(`NetCDF file not found at: ${filePath}`);
@@ -233,17 +233,17 @@ function activate(context) {
             if (!fs.existsSync(scriptPath)) {
                 throw new Error(`Python script not found at: ${scriptPath}`);
             }
-            
+
             // 检查环境
             const env = await checkWSLEnvironment();
             console.log('Environment check result:', env);
-            
+
             // 读取netCDF文件
             console.log('Reading netCDF file...');
             const markdownContent = await new Promise((resolve, reject) => {
                 let output = '';
                 let errorOutput = '';
-                
+
                 // 设置环境变量
                 const processEnv = Object.assign({}, process.env, {
                     PYTHONIOENCODING: 'utf-8',
@@ -253,7 +253,7 @@ function activate(context) {
                     LC_ALL: 'C.UTF-8',
                     PATH: process.env.PATH
                 });
-                
+
                 let pythonProcess;
                 if (env.isWSL) {
                     // 确定脚本路径
@@ -265,7 +265,7 @@ function activate(context) {
                         // 从Windows通过WSL运行时，需要转换路径
                         effectiveScriptPath = convertWindowsToWSLPath(scriptPath);
                     }
-                    
+
                     // 确定文件路径
                     let effectiveFilePath;
                     if (env.isNativeWSL) {
@@ -275,12 +275,12 @@ function activate(context) {
                         // 从Windows通过WSL运行时，需要转换路径
                         effectiveFilePath = convertWindowsToWSLPath(filePath);
                     }
-                    
+
                     console.log('Effective paths:', {
                         script: effectiveScriptPath,
                         file: effectiveFilePath
                     });
-                    
+
                     if (env.isNativeWSL) {
                         // 在WSL中原生运行
                         pythonProcess = spawn(env.pythonPath, [
@@ -296,7 +296,7 @@ function activate(context) {
                         // 使用绝对路径和引号处理空格
                         const wslCommand = `cd "${path.dirname(effectiveScriptPath)}" && /usr/bin/env python3 -u "${path.basename(effectiveScriptPath)}" "${effectiveFilePath}"`;
                         console.log('WSL command:', wslCommand);
-                        
+
                         pythonProcess = spawn('wsl.exe', [
                             '--exec',
                             '/usr/bin/env',
@@ -316,17 +316,17 @@ function activate(context) {
                         shell: false
                     });
                 }
-                
+
                 pythonProcess.stdout.on('data', (data) => {
                     output += data.toString('utf8');
                 });
-                
+
                 pythonProcess.stderr.on('data', (data) => {
                     const message = data.toString('utf8');
                     errorOutput += message;
                     console.log('Python debug:', message);
                 });
-                
+
                 pythonProcess.on('close', (code) => {
                     if (code !== 0) {
                         reject(new Error(errorOutput || 'Python script failed with no error message'));
@@ -334,32 +334,32 @@ function activate(context) {
                         resolve(output);
                     }
                 });
-                
+
                 pythonProcess.on('error', (err) => {
                     console.error('Process error:', err);
                     reject(new Error(`Failed to start Python process: ${err.message}`));
                 });
             });
-            
+
             // 创建输出文件
             const outputPath = filePath + '.info.md';
             console.log('Creating output file:', outputPath);
-            
+
             // 确保输出目录存在
             const outputDir = path.dirname(outputPath);
             if (!fs.existsSync(outputDir)) {
                 fs.mkdirSync(outputDir, { recursive: true });
             }
-            
+
             // 写入文件
             fs.writeFileSync(outputPath, markdownContent, { encoding: 'utf8' });
-            
+
             // 打开文件
             const document = await vscode.workspace.openTextDocument(outputPath);
             await vscode.window.showTextDocument(document);
-            
+
             vscode.window.showInformationMessage('NetCDF info file created successfully!');
-            
+
         } catch (error) {
             console.error('Error:', error);
             const channel = vscode.window.createOutputChannel('NetCDF Explorer');
@@ -370,12 +370,47 @@ function activate(context) {
                 channel.appendLine('Stack trace:');
                 channel.appendLine(error.stack);
             }
-            
+
             vscode.window.showErrorMessage('Error creating NetCDF info file. Check Output panel for details.');
         }
     });
-    
+
     context.subscriptions.push(disposable);
+
+    const netcdfTerminalLinkProvider = {
+        provideTerminalLinks(contextLine, _token) {
+            const links = [];
+            const regex = /\b[\w\-.\/\\]+\.nc\b/g;
+            let match;
+            while ((match = regex.exec(contextLine.line)) !== null) {
+                links.push({
+                    startIndex: match.index,
+                    length: match[0].length,
+                    tooltip: "Inspect this NetCDF file",
+                    text: match[0] // CRITICAL: this is required for handleTerminalLink to work
+                });
+            }
+            return links;
+        },
+        async handleTerminalLink(link) {
+            let filePath = link.text;
+            if (!filePath) return;
+            if (!path.isAbsolute(filePath)) {
+                const folders = vscode.workspace.workspaceFolders;
+                if (folders && folders.length) {
+                    filePath = path.join(folders[0].uri.fsPath, filePath);
+                }
+            }
+            const infoPath = filePath + '.info.md';
+            if (fs.existsSync(infoPath)) {
+                const document = await vscode.workspace.openTextDocument(infoPath);
+                await vscode.window.showTextDocument(document);
+            } else {
+                await vscode.commands.executeCommand('netcdf-explorer.showInfo', vscode.Uri.file(filePath));
+            }
+        }
+    };
+    context.subscriptions.push(vscode.window.registerTerminalLinkProvider(netcdfTerminalLinkProvider));
 }
 
 function deactivate() {
@@ -385,4 +420,4 @@ function deactivate() {
 module.exports = {
     activate,
     deactivate
-}; 
+};
