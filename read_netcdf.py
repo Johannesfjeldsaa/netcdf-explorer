@@ -51,7 +51,7 @@ def normalize_path(file_path):
     """规范化文件路径，处理中文路径和WSL路径问题"""
     try:
         print(f"Input path: {file_path}", file=sys.stderr)
-        
+
         # 如果是bytes，尝试解码
         if isinstance(file_path, bytes):
             try:

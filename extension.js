@@ -397,6 +397,7 @@ function activate(context) {
     const netcdfTerminalLinkProvider = {
         provideTerminalLinks(contextLine, _token) {
             const links = [];
+            // Regex matches .nc files with reasonable characters in the path
             const regex = /\b[\w\-.\/\\]+\.nc\b/g;
             let match;
             while ((match = regex.exec(contextLine.line)) !== null) {
@@ -404,16 +405,23 @@ function activate(context) {
                     startIndex: match.index,
                     length: match[0].length,
                     tooltip: "Inspect this NetCDF file",
-                    text: match[0] // CRITICAL: this is required for handleTerminalLink to work
+                    text: match[0]
                 });
             }
             return links;
         },
+
         async handleTerminalLink(link) {
             let filePath = link.text;
             if (!filePath) return;
 
-            // Use absolute paths as-is; otherwise, join with workspace root.
+            // Clean up possible leading dash artifact
+            if (filePath.startsWith('-/')) {
+                filePath = filePath.slice(1);
+            }
+
+            // If the path is absolute, use as-is.
+            // If it's not, join with workspace root for resolution.
             if (!path.isAbsolute(filePath)) {
                 const folders = vscode.workspace.workspaceFolders;
                 if (folders && folders.length) {
@@ -423,6 +431,9 @@ function activate(context) {
                     return;
                 }
             }
+
+            // Optional: Normalize path (removes redundant .., . etc)
+            filePath = path.normalize(filePath);
 
             const infoPath = filePath + '.info.md';
             if (fs.existsSync(infoPath)) {
