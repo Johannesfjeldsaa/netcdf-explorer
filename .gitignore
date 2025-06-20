@@ -1,6 +1,6 @@
 # VS Code files
 .vscode/
-*.vsix
+
 
 # Node modules
 node_modules/
