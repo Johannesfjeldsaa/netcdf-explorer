@@ -398,7 +398,7 @@ function activate(context) {
         provideTerminalLinks(contextLine, _token) {
             const links = [];
             // Regex matches .nc files with reasonable characters in the path
-            const regex = /\b[\w\-.\/\\]+\.nc\b/g;
+            const regex = /(?:\/|\.\/|\.\.\/)?[\w\-.\/\\]+\.nc/g;
             let match;
             while ((match = regex.exec(contextLine.line)) !== null) {
                 links.push({
