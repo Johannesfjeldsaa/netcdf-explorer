@@ -412,12 +412,18 @@ function activate(context) {
         async handleTerminalLink(link) {
             let filePath = link.text;
             if (!filePath) return;
+
+            // Use absolute paths as-is; otherwise, join with workspace root.
             if (!path.isAbsolute(filePath)) {
                 const folders = vscode.workspace.workspaceFolders;
                 if (folders && folders.length) {
                     filePath = path.join(folders[0].uri.fsPath, filePath);
+                } else {
+                    vscode.window.showErrorMessage(`No workspace open to resolve relative path: "${filePath}"`);
+                    return;
                 }
             }
+
             const infoPath = filePath + '.info.md';
             if (fs.existsSync(infoPath)) {
                 const document = await vscode.workspace.openTextDocument(infoPath);
